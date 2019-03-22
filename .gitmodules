@@ -1,0 +1,9 @@
+[submodule "test/libs/Catch2"]
+	path = test/libs/Catch2
+	url = git@github.com:catchorg/Catch2.git
+[submodule "libs/eigen"]
+	path = libs/eigen
+	url = git@github.com:eigenteam/eigen-git-mirror.git
+[submodule "libs/geo"]
+	path = libs/geo
+	url = git@github.com:Joklost/geo.git
