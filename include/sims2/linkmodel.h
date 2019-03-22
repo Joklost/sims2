@@ -10,10 +10,10 @@
 #define TX_POWER 26.0
 
 
-namespace sim2 {
+namespace sims2 {
     class Linkmodel {
     public:
-        void find_neighbourhood(const sim2::Link &link);
+        void find_neighbourhood(const sims2::Link &link);
 
         /**
          * Compute the linkmodel at the current object state
@@ -31,15 +31,15 @@ namespace sim2 {
 
         const double generate_gaussian_value(double mean, double std_deviation) const;
 
-        Linkmodel(std::vector<sim2::Node> &nodes, double threshold = 0.55);
+        Linkmodel(std::vector<sims2::Node> &nodes, double threshold = 0.55);
 
-        Linkmodel(std::vector<sim2::Link> &links);
+        Linkmodel(std::vector<sims2::Link> &links);
 
         const std::unordered_map<int, double> &get_pep() const;
 
     private:
         std::unordered_map<int, std::vector<int>> neighbourhoods{};
-        std::vector<sim2::Link> links{};
+        std::vector<sims2::Link> links{};
         std::unordered_map<int, double> pep{};
         std::unordered_map<int, double> prev_rssi{};
 

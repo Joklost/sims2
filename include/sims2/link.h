@@ -4,7 +4,7 @@
 #include <geo/geo.h>
 #include <ostream>
 
-namespace sim2 {
+namespace sims2 {
     class Node {
     public:
         unsigned int id;
