@@ -7,7 +7,7 @@
 namespace sims2 {
     class Node {
     public:
-        unsigned int id;
+        unsigned long id;
         geo::Location location;
 
         bool operator==(const Node &rhs) const {
