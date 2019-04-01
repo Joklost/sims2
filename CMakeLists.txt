@@ -1,7 +1,11 @@
 project(sims2 VERSION 1.0)
 
 add_subdirectory(libs)
-add_library(sims2 src/linkmodel.cpp src/datagen.cpp src/radiomodel.cpp)
+add_library(sims2
+        $<TARGET_OBJECTS:geo>
+        src/linkmodel.cpp
+        src/datagen.cpp
+        src/radiomodel.cpp)
 
 # Define headers for this library. PUBLIC headers are used for
 # compiling the library, and will be added to consumers' build
@@ -22,4 +26,3 @@ target_link_libraries(sims2 geo eigen)
 enable_testing()
 
 add_subdirectory(test)
-add_subdirectory(linkmodel_verification)
