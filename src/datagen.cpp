@@ -8,15 +8,15 @@ sims2::data::generate_nodes(unsigned long count, geo::Location &upper, geo::Loca
     std::vector<sims2::Node> nodes{};
     nodes.reserve(count);
 
-    auto lat_min = lower.get_latitude();
-    auto lat_max = upper.get_latitude();
+    auto lat_min = lower.latitude;
+    auto lat_max = upper.latitude;
     std::random_device rd_lat;
     std::default_random_engine eng_lat(rd_lat());
     std::uniform_real_distribution<double> dist_lat{lat_min, lat_max};
     auto gen_lat = std::bind(dist_lat, eng_lat);
 
-    auto lon_min = lower.get_longitude();
-    auto lon_max = upper.get_longitude();
+    auto lon_min = lower.longitude;
+    auto lon_max = upper.longitude;
     std::random_device rd_lon;
     std::default_random_engine eng_lon(rd_lon());
     std::uniform_real_distribution<double> dist_lon{lon_min, lon_max};
