@@ -5,7 +5,8 @@ add_library(sims2
         $<TARGET_OBJECTS:geo>
         src/linkmodel.cpp
         src/datagen.cpp
-        src/radiomodel.cpp)
+        src/radiomodel.cpp
+        src/losmodel.cpp)
 
 # Define headers for this library. PUBLIC headers are used for
 # compiling the library, and will be added to consumers' build
@@ -13,7 +14,7 @@ add_library(sims2
 target_include_directories(sims2 PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-        PRIVATE src test linkmodel_verification)
+        PRIVATE src test)
 
 # 'make install' to the correct locations (provided by GNUInstallDirs).
 install(TARGETS sims2 EXPORT Sims2LibraryConfig
