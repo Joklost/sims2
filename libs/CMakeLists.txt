@@ -6,9 +6,3 @@ endif ()
 if (NOT TARGET geo)
     add_subdirectory(geo)
 endif ()
-
-if (NOT TARGET SFML)
-    add_subdirectory(SFML/include/)
-endif ()
-# to build SFML, install these
-# libx11-dev, freeglut3-d, libudev-dev, libopenal-dev, libflac-dev, libvorbis-dev, libvorbisenc2, oggvideotools, oggfwd

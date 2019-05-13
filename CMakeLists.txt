@@ -3,7 +3,6 @@ project(sims2 VERSION 1.0)
 add_subdirectory(libs)
 add_library(sims2
         $<TARGET_OBJECTS:geo>
-        $<TARGET_OBJECTS:SFMl>
         src/linkmodel.cpp
         src/datagen.cpp
         src/radiomodel.cpp
@@ -24,7 +23,7 @@ install(TARGETS sims2 EXPORT Sims2LibraryConfig
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})  # This is for Windows
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-target_link_libraries(sims2 geo eigen SFML)
+target_link_libraries(sims2 geo eigen)
 enable_testing()
 
 add_subdirectory(test)

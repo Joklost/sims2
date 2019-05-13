@@ -7,6 +7,3 @@
 [submodule "libs/geo"]
 	path = libs/geo
 	url = git@github.com:Joklost/geo.git
-[submodule "libs/SFML"]
-	path = libs/SFML
-	url = https://github.com/SFML/SFML
