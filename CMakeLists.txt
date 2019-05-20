@@ -6,7 +6,8 @@ add_library(sims2
         src/linkmodel.cpp
         src/datagen.cpp
         src/radiomodel.cpp
-        src/losmodel.cpp)
+        src/losmodel.cpp
+        src/bitmap.cpp)
 
 # Define headers for this library. PUBLIC headers are used for
 # compiling the library, and will be added to consumers' build
