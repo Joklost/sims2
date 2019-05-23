@@ -11,8 +11,7 @@
 #include <sims2/datagen.h>
 #include <sims2/constants.h>
 #include <sims2/linkmodel.h>
-//#include <sims2/losmodel.h>
-#include <sims2/bitmap.h>
+#include <sims2/losmodel.h>
 
 using namespace std::literals::chrono_literals;
 using namespace geo::literals;
@@ -87,7 +86,7 @@ TEST_CASE("Write pixel change in BitMap to new BitMap", "[BitMap]") {
 }
 
 TEST_CASE("Compute Line of Sight pathloss", "[LoSModel]") {
-    auto file_path = "/home/r5hej/playground/static_map/test_map.bmp";
+    auto file_path = "/home/r5hej/repos/masters/src/libs/sims2/test/test_maps/map.bmp";
     auto map = sims2::BitMap(file_path);
     auto pos1 = geo::Location{57.0182, 9.9723};
     auto pos2 = geo::Location{57.0106, 9.9948};
@@ -97,5 +96,21 @@ TEST_CASE("Compute Line of Sight pathloss", "[LoSModel]") {
     auto tpos1 = geo::Location{57.01482, 9.98137};
     auto tpos2 = geo::Location{57.01441, 9.98768};
 
-    std::cout << losmodel.compute(tpos1, tpos2) << std::endl;
+    auto new_map = losmodel.visualise_line(tpos1, tpos2);
+    new_map.write("/home/r5hej/playground/static_map/modified_map.bmp");
+}
+
+TEST_CASE("Compute the pathloss with Line of Sight model", "[LoSModel]") {
+    auto file_path = "/home/r5hej/repos/masters/src/libs/sims2/test/test_maps/map.bmp";
+    auto map = sims2::BitMap(file_path);
+    auto pos1 = geo::Location{57.0182, 9.9723};
+    auto pos2 = geo::Location{57.0106, 9.9948};
+
+    auto losmodel = sims2::LoSModel(map, pos1, pos2);
+
+    auto tpos1 = geo::Location{57.01482, 9.98137};
+    auto tpos2 = geo::Location{57.01441, 9.98768};
+
+    auto pathloss = losmodel.compute(tpos1, tpos2);
+    std::cout << pathloss << "%" << std::endl;
 }

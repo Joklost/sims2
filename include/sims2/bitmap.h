@@ -34,9 +34,6 @@ namespace sims2 {
         unsigned long red, green, blue;
     };
 
-    const auto MAP_BUILDING_RGB = RGB(217, 208, 201);
-
-
     class BitMap {
     private:
 #pragma pack(push, 1)
@@ -96,7 +93,9 @@ namespace sims2 {
         uint32_t channels;
 
     public:
-        BitMap(const char *fname);
+        BitMap() = default;
+
+        explicit BitMap(const char *fname);
 
         void read(const char *fname);
 
