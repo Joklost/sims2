@@ -4,6 +4,10 @@ sims2::BitMap::BitMap(const char *fname) {
     this->read(fname);
 }
 
+sims2::BitMap::BitMap(std::string fname) {
+    this->read(fname.c_str());
+}
+
 void sims2::BitMap::read(const char *fname) {
     std::ifstream inp{fname, std::ios_base::binary};
     if (inp) {
@@ -72,6 +76,10 @@ void sims2::BitMap::read(const char *fname) {
         throw std::runtime_error("Unable to open the input image file.");
     }
     inp.close();
+}
+
+void sims2::BitMap::write(std::string fname) {
+    this->write(fname.c_str());
 }
 
 void sims2::BitMap::write(const char *fname) {
@@ -160,4 +168,16 @@ const int32_t sims2::BitMap::get_height() const {
 const int32_t sims2::BitMap::get_width() const {
     return this->bmp_info_header.width;
 }
+
+bool sims2::BitMap::operator==(const sims2::BitMap &rhs) const {
+    if (this->get_width() == rhs.get_width() && this->get_height() == rhs.get_height())
+        return this->data == rhs.data;
+    else
+        return false;
+}
+
+bool sims2::BitMap::operator!=(const sims2::BitMap &rhs) const {
+    return !(rhs == *this);
+}
+
 

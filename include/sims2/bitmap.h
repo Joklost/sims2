@@ -97,9 +97,13 @@ namespace sims2 {
 
         explicit BitMap(const char *fname);
 
+        explicit BitMap(std::string fname);
+
         void read(const char *fname);
 
         void write(const char *fname);
+
+        void write(std::string fname);
 
         void set_pixel(uint32_t x, uint32_t y, sims2::RGB rgb);
 
@@ -108,6 +112,10 @@ namespace sims2 {
         const int32_t get_height() const;
 
         const int32_t get_width() const;
+
+        bool operator==(const BitMap &rhs) const;
+
+        bool operator!=(const BitMap &rhs) const;
     };
 }
 #endif //MANETSIMS_BITMAP_H
