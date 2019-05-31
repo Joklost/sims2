@@ -33,6 +33,12 @@ namespace sims2 {
         Node node1, node2;
         double distance;
 
+        Link(Node node1, Node node2) {
+            this->node1 = node1;
+            this->node2 = node2;
+            this->distance = geo::distance_between(node1.location, node2.location);
+        }
+
         Link(unsigned int id, Node node1, Node node2) {
             this->id = id;
             this->node1 = node1;
@@ -41,7 +47,7 @@ namespace sims2 {
         }
 
         bool operator==(const Link &rhs) const {
-            return id == rhs.id;
+            return rhs.node1 == this->node1 and rhs.node2 == this->node2;
         }
 
         bool operator!=(const Link &rhs) const {
@@ -51,9 +57,9 @@ namespace sims2 {
         double angle_between(const Link &link) const {
             if (this->node1 == link.node1) {
                 return geo::angle_between(this->node1.location, this->node2.location, link.node2.location);
-            } else if(this->node1 == link.node2) {
+            } else if (this->node1 == link.node2) {
                 return geo::angle_between(this->node1.location, this->node2.location, link.node1.location);
-            } else if(this->node2 == link.node1) {
+            } else if (this->node2 == link.node1) {
                 return geo::angle_between(this->node2.location, this->node1.location, link.node2.location);
             } else {
                 return geo::angle_between(this->node2.location, this->node1.location, link.node1.location);

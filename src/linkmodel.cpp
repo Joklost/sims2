@@ -86,7 +86,7 @@ sims2::Linkmodel::Linkmodel(std::vector<sims2::Node> &nodes,
 }
 
 double sims2::Linkmodel::distance_pathloss(const double distance) {
-    return (10 * PATHLOSS_EXPONENT) * std::log10(distance) + PATHLOSS_CONSTANT_OFFSET;
+    return 25 * std::log10(distance) + 45;
 }
 
 const double sims2::Linkmodel::generate_gaussian_value(double mean, double std_deviation) const {
