@@ -1,21 +1,15 @@
 #!/usr/bin/env bash
 
-
 MAPBOX_TOKEN="pk.eyJ1IjoiY2J5cmRhMTQiLCJhIjoiY2p3OTR1dzV4MjJ1cDN6cXJmOTZuZWhhaiJ9.9zv76ioomyEmyweDP486BA"
-
-### test data
-# zoom=16
-# lat=14.605715499999999
-# lon=121.095042
 
 lat=$1
 lon=$2
 zoom=$3
 
 style="styles/v1/mapbox/light-v10"
-
 url="https://api.mapbox.com/$style/static/$lon,$lat,$zoom/1280x1280@2x?access_token=$MAPBOX_TOKEN"
 
-curl $url -o $4.png
-convert $4.png -type truecolor $4.bmp
-rm $4.png
+curl $url -o $4/$5.png > /dev/null 2>&1
+convert $4/$5.png -type truecolor $4/$5.bmp
+rm $4/$5.png
+echo $5 >> $4/.fetched_maps

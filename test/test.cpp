@@ -1,10 +1,10 @@
 #include <catch2/catch.hpp>
-//#include <Eigen/Core>
 #include <iostream>
 #include <chrono>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+
 
 #include <geo/geomath.h>
 #include <geo/location.h>
@@ -53,5 +53,5 @@ TEST_CASE("Lookup a model in index and compute building percentage", "[LoSModelI
     /* Get the desired model, in this case it will create a new since the index is empty */
     auto model = index.get_model(pos1, pos2);
 
-    REQUIRE(model.compute(pos1, pos2) == Approx(52.9).margin(0.1));
+    REQUIRE(model.compute(pos1, pos2) == Approx(52.6).margin(0.1));
 }

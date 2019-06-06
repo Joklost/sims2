@@ -7,6 +7,7 @@
 
 #include <geo/geo.h>
 #include <sims2/bitmap.h>
+#include <sims2/link.h>
 
 
 struct pixelPos {
@@ -35,8 +36,8 @@ namespace sims2 {
         MapGenerator(const char *script_path, const char *map_path) : script_path(script_path),
                                                                       map_path(map_path) {};
 
-        MapGenerator(std::string &script_path, std::string &map_path) : script_path(script_path.c_str()),
-                                                                        map_path(map_path.c_str()) {};
+        MapGenerator(std::string script_path, std::string map_path) : script_path(script_path.c_str()),
+                                                                      map_path(map_path.c_str()) {};
 
         /**
          * Generate new BitMap based on given coorner coordinates, and new nw and se coordinates
@@ -61,10 +62,16 @@ namespace sims2 {
         LoSModel(sims2::BitMap map, geo::Location nw, geo::Location se);
 
         /**
-         * Compute the building percentage
-         * @return Building percentage
+         * Compute the path loss
+         * @return Path loss
          */
         const double compute(const geo::Location &pos1, const geo::Location &pos2) const;
+
+        /**
+         * Compute the path loss
+         * @return Path loss
+         */
+        const double compute(const sims2::Link &link) const;
 
         /**
          * Create new BitMap where building pixels have been changed to show computed building coordinates
@@ -72,10 +79,12 @@ namespace sims2 {
          */
         sims2::BitMap visualise_line(const geo::Location &pos1, const geo::Location &pos2) const;
 
-        static const double pathloss_formula(double distance);
-
         geo::Location nw_corner;    /* north-west corner position */
         geo::Location se_corner;    /* south-east corner position */
+
+        static const double cvpl(double distance);
+
+        static const double bopl(double distance);
 
     private:
 
@@ -114,8 +123,8 @@ namespace sims2 {
                 sims2::RGB(226, 226, 225),
                 sims2::RGB(224, 224, 222),
                 sims2::RGB(228, 228, 226),
-                sims2::RGB(230, 230, 229),
                 sims2::RGB(233, 233, 231),
+                sims2::RGB(236, 238, 237),
         };
     };
 
@@ -123,12 +132,24 @@ namespace sims2 {
     public:
         LoSModelIndex(std::string &script_path, std::string &map_path);
 
+        LoSModelIndex(const char *script_path, const char *map_path);
+
         /**
          * Get stored model
          * @return LoSModel object
          */
-        sims2::LoSModel get_model(const geo::Location &pos1, const geo::Location &pos2);
+        sims2::LoSModel &get_model(const geo::Location &pos1, const geo::Location &pos2);
 
+        /**
+         * Get stored model
+         * @return LoSModel object
+         */
+        sims2::LoSModel &get_model(const sims2::Link& link);
+
+        sims2::MapGenerator generator{};
+        int zoom_level = 16;
+
+    private:
         /**
          * Check if index contains a matching model
          * @return Index for stored model
@@ -136,14 +157,10 @@ namespace sims2 {
         const int has_model(const geo::Location &pos1, const geo::Location &pos2) const;
 
         /**
-         * Add a new model to the index
+         * Load locally stored map images and generate models
          */
-//        void add_model(sims2::LoSModel model);
+        void load_models(std::string map_path);
 
-        sims2::MapGenerator generator{};
-        int zoom_level = 16;
-
-    private:
         std::vector<sims2::LoSModel> models{};
         std::vector<std::pair<geo::Location, geo::Location>> index{};
     };

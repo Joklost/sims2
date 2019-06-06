@@ -27,6 +27,10 @@ namespace sims2 {
          */
         static double distance_pathloss(double distance);
 
+        static double cvpl(double distance);
+
+        static double bopl(double distance);
+
         const double compute_autocorrelation(double angle) const;
 
         const double generate_gaussian_value(double mean, double std_deviation) const;

@@ -32,6 +32,7 @@ namespace sims2 {
         unsigned int id;
         Node node1, node2;
         double distance;
+        double rssi;
 
         Link(Node node1, Node node2) {
             this->node1 = node1;

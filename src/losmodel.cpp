@@ -5,13 +5,16 @@
 #include <cstring>
 
 #include <sims2/losmodel.h>
+#include <common/strings.h>
+#include <sims2/link.h>
+
 
 /*******************************/
 /*          LoS model          */
 /*******************************/
 const long double line_bearing(const pixelPos &pos1, const pixelPos &pos2) {
-    long double x_diff = pos1.x - pos2.x;
-    return x_diff == 0 ? x_diff : (pos1.y - pos2.y) / x_diff;
+    long double x_diff = pos2.x - pos1.x;
+    return x_diff == 0 ? x_diff : (pos2.y - pos1.y) / x_diff;
 }
 
 const double vertical_distance(const geo::Location &pos1, const geo::Location &pos2) {
@@ -25,7 +28,7 @@ const double horizontal_distance(const geo::Location &pos1, const geo::Location 
 sims2::LoSModel::LoSModel(BitMap map, const geo::Location nw, const geo::Location se) {
     this->nw_corner = nw;
     this->se_corner = se;
-    this->map = std::move(map);
+    this->map = map;
 
     this->lat_mtp = vertical_distance(this->nw_corner, this->se_corner) / this->map.get_height();
     this->lon_mtp = horizontal_distance(this->nw_corner, this->se_corner) / this->map.get_width();
@@ -41,10 +44,6 @@ const pixelPos sims2::LoSModel::gps_to_pixel_pos(const geo::Location &pos) const
     );
 }
 
-const double sims2::LoSModel::pathloss_formula(const double distance) {
-    return 28.63263632987809 * std::log10(distance) + 0.003980704079352521;
-//    return 0.008839017600881068 * std::log10(distance) + -8.127120163683704;
-}
 
 const double sims2::LoSModel::compute(const geo::Location &pos1, const geo::Location &pos2) const {
     pixelPos pixel_pos1{}, pixel_pos2{};
@@ -61,10 +60,11 @@ const double sims2::LoSModel::compute(const geo::Location &pos1, const geo::Loca
     auto bearing = line_bearing(pixel_pos1, pixel_pos2);
     auto count = 0, total = 0;
 
-    long double x = pixel_pos2.x, y = pixel_pos2.y;
+    long int x = pixel_pos2.x;
+    long double y = pixel_pos2.y;
     do {
-        x--;
-        y -= 1 * bearing;
+        if (this->out_of_map(x, y))
+            throw "Pixel position is out of map x y range";
 
         auto color = this->map.get_pixel(x, y);
         for (const auto &map_rgb : this->MAP_BUILDING_RGB) {
@@ -73,10 +73,19 @@ const double sims2::LoSModel::compute(const geo::Location &pos1, const geo::Loca
                 break;
             }
         }
+
+        x--;
+        y -= bearing;
         total++;
     } while (x >= pixel_pos1.x && y >= pixel_pos1.y);
 
-    return (100 * count) / (double) total;
+    /* Compute the path loss */
+    auto building_pct = (100 * count) / (double) total;
+    double clear_pct = 100 - building_pct;
+    auto distance = geo::distance_between(pos1, pos2) * KM;
+
+    return (sims2::LoSModel::bopl(std::round(distance)) / 100) * building_pct +
+           (sims2::LoSModel::cvpl(std::round(distance)) / 100) * clear_pct;
 }
 
 sims2::BitMap sims2::LoSModel::visualise_line(const geo::Location &pos1, const geo::Location &pos2) const {
@@ -93,12 +102,13 @@ sims2::BitMap sims2::LoSModel::visualise_line(const geo::Location &pos1, const g
 
     auto bearing = line_bearing(pixel_pos1, pixel_pos2);
     auto to_return = this->map;
-    long double x = pixel_pos2.x, y = pixel_pos2.y;
+    long int x = pixel_pos2.x;
+    long double y = pixel_pos2.y;
     to_return.set_pixel(x, y, sims2::RGB{255, 0, 255});
 
     do {
-        x--;
-        y -= 1 * bearing;
+        if (this->out_of_map(x, y))
+            throw "Pixel position is out of map x y range";
 
         auto trigger = false;
         for (const auto &map_rgb : this->MAP_BUILDING_RGB) {
@@ -113,6 +123,8 @@ sims2::BitMap sims2::LoSModel::visualise_line(const geo::Location &pos1, const g
             to_return.set_pixel(x, y, sims2::RGB{0, 255, 0});
         }
 
+        x--;
+        y -= bearing;
     } while (x >= pixel_pos1.x && y >= pixel_pos1.y);
     to_return.set_pixel(x, y, sims2::RGB{255, 0, 255});
 
@@ -132,6 +144,19 @@ const bool sims2::LoSModel::out_of_map(geo::Location &pos) const {
            this->nw_corner.longitude <= pos.longitude <= this->se_corner.longitude;
 }
 
+const double sims2::LoSModel::cvpl(const double distance) {
+    return distance == 0 ? 0 : 48.5 * (std::log(distance) / std::log(77)) + 37.5;
+}
+
+const double sims2::LoSModel::bopl(const double distance) {
+    return distance == 0 ? 0 : 67 * (std::log(distance) / std::log(57)) + 11.5;
+}
+
+const double sims2::LoSModel::compute(const sims2::Link &link) const {
+    return this->compute(link.node1.location, link.node2.location);
+}
+
+
 /*************************************/
 /*           Map generator           */
 /*************************************/
@@ -148,11 +173,13 @@ sims2::MapGenerator::generate_map(const geo::Location &pos1, const geo::Location
     script_args += " " + std::to_string(centroid.latitude)
                    + " " + std::to_string(centroid.longitude)
                    + " " + std::to_string(zoomlevel)
-                   + " " + this->map_path + file_name;
+                   + " " + this->map_path
+                   + " " + file_name;
 
-    system(script_args.c_str());
-
-    return std::make_tuple(sims2::BitMap(this->map_path + file_name + ".bmp"), nw, se);
+    std::system(script_args.c_str());
+    std::string mp = this->map_path;
+    mp += "/" + file_name + ".bmp";
+    return std::make_tuple(sims2::BitMap(mp.c_str()), nw, se);
 }
 
 geo::Location sims2::MapGenerator::compute_centroid(const geo::Location &nw, const geo::Location &se) const {
@@ -181,35 +208,39 @@ const double sims2::MapGenerator::compute_hypotenuse(const geo::Location &centro
 /*************************************/
 /*          LoS model index          */
 /*************************************/
-#if 0
-sims2::LoSModel sims2::LoSModelIndex::get_model(const int index_pos) const {
-    return this->models[index_pos];
-}
-
-void sims2::LoSModelIndex::add_model(sims2::LoSModel model) {
-    this->index.emplace_back(std::make_pair(model.nw_corner, model.se_corner));
-    this->models.push_back(model);
-}
-
-#endif
-
 const int sims2::LoSModelIndex::has_model(const geo::Location &pos1, const geo::Location &pos2) const {
     for (auto i = 0; i < this->index.size(); ++i) {
-        auto el = this->index[i];
+        auto &el = this->index[i];
+        auto nw_bearing_pos1 = geo::bearing_between(pos1, el.first);
+        auto se_bearing_pos1 = geo::bearing_between(pos1, el.second);
+        auto nw_bearing_pos2 = geo::bearing_between(pos2, el.first);
+        auto se_bearing_pos2 = geo::bearing_between(pos2, el.second);
 
-        if ((el.first.latitude <= pos1.latitude <= el.second.latitude &&
-             el.first.longitude <= pos1.longitude <= el.second.longitude) &&
-            (el.first.latitude <= pos2.latitude <= el.second.latitude &&
-             el.first.longitude <= pos2.longitude <= el.second.longitude)) {
+        auto cond_nw = nw_bearing_pos1 >= 90
+                       && nw_bearing_pos1 <= 180
+                       && nw_bearing_pos2 >= 90
+                       && nw_bearing_pos2 <= 180;
 
-            return i;
+        if (cond_nw) {
+            auto cond_se = se_bearing_pos1 >= 270
+                           && (se_bearing_pos1 <= 359.999999 || se_bearing_pos1 == 0)
+                           && se_bearing_pos2 >= 270
+                           && (se_bearing_pos2 <= 359.999999 || se_bearing_pos2 == 0);
+
+            if (cond_se)
+                return i;
         }
     }
 
     return -1;
 }
 
-sims2::LoSModel sims2::LoSModelIndex::get_model(const geo::Location &pos1, const geo::Location &pos2) {
+
+sims2::LoSModel &sims2::LoSModelIndex::get_model(const sims2::Link &link) {
+    return this->get_model(link.node1.location, link.node2.location);
+}
+
+sims2::LoSModel &sims2::LoSModelIndex::get_model(const geo::Location &pos1, const geo::Location &pos2) {
     if (geo::distance_between(pos1, pos2) * KM > 1500)
         throw "Link distance not possible.";
 
@@ -222,10 +253,39 @@ sims2::LoSModel sims2::LoSModelIndex::get_model(const geo::Location &pos1, const
     std::tie(map, nw, se) = this->generator.generate_map(pos1, pos2, this->zoom_level);
 
     this->index.emplace_back(std::make_pair(nw, se));
-    auto model = sims2::LoSModel{map, nw, se};
-    this->models.push_back(model);
-    return model;
+    this->models.emplace_back(map, nw, se);
+    return this->models.back();
 }
 
-sims2::LoSModelIndex::LoSModelIndex(std::string &script_path, std::string &map_path)
-        : generator(script_path, map_path) {}
+sims2::LoSModelIndex::LoSModelIndex(std::string &script_path, std::string &map_path) : generator(script_path,
+                                                                                                 map_path) {
+    if (map_path.back() == '/')
+        map_path.pop_back();
+
+    this->load_models(map_path);
+}
+
+sims2::LoSModelIndex::LoSModelIndex(const char *script_path, const char *map_path) : generator(script_path, map_path) {
+    std::string p = map_path;
+    if (p.back() == '/')
+        p.pop_back();
+
+    this->load_models(p);
+}
+
+void sims2::LoSModelIndex::load_models(std::string map_path) {
+    std::ifstream file(map_path + "/.fetched_maps");
+    if (file.good()) {
+        for (std::string line; std::getline(file, line);) {
+            auto split = common::split(line, "-");
+            auto nw = geo::Location{std::stod(split.fpop()), std::stod(split.fpop())};
+            auto se = geo::Location{std::stod(split.fpop()), std::stod(split.fpop())};
+
+            auto map = sims2::BitMap{map_path + "/" + line + ".bmp"};
+            this->models.emplace_back(map, nw, se);
+            this->index.emplace_back(std::make_pair(nw, se));
+        }
+        file.close();
+    }
+}
+

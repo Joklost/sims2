@@ -1,6 +1,3 @@
-#include <Eigen/Cholesky>
-#include <Eigen/SVD>
-#include <Eigen/Eigenvalues>
 #include <iostream>
 #include <random>
 
@@ -60,14 +57,14 @@ long double sims2::Linkmodel::compute(std::vector<double> cholesky) {
         << std::endl;*/
 
         total += std::abs(rssi_org - rssi_new);
-       /* std::cout
-                << std::left
-                << std::setw(11) << cholesky[count]
-                << std::setw(11) << sum
-                << std::setw(13) << cholesky[count++] - sum
-//                << std::setw(11) << rssi
-//                << std::setw(7) << pep
-                << this->neighbourhoods[link.id].size() << std::endl;*/
+        /* std::cout
+                 << std::left
+                 << std::setw(11) << cholesky[count]
+                 << std::setw(11) << sum
+                 << std::setw(13) << cholesky[count++] - sum
+ //                << std::setw(11) << rssi
+ //                << std::setw(7) << pep
+                 << this->neighbourhoods[link.id].size() << std::endl;*/
     }
     return total;
 }
@@ -81,12 +78,12 @@ sims2::Linkmodel::Linkmodel(std::vector<sims2::Link> &links) {
 }
 
 sims2::Linkmodel::Linkmodel(std::vector<sims2::Node> &nodes,
-                              const double threshold) {
+                            const double threshold) {
     this->links = sims2::data::create_links(nodes, threshold);
 }
 
 double sims2::Linkmodel::distance_pathloss(const double distance) {
-    return 25 * std::log10(distance) + 45;
+    return 55 * std::log10(distance) - 18.8;
 }
 
 const double sims2::Linkmodel::generate_gaussian_value(double mean, double std_deviation) const {
@@ -98,4 +95,16 @@ const double sims2::Linkmodel::generate_gaussian_value(double mean, double std_d
 
 const std::unordered_map<int, double> &sims2::Linkmodel::get_pep() const {
     return pep;
+}
+
+//double sims2::Linkmodel::cvpl(const double distance) {
+//    return distance == 0 ? 0 : 24.72 * std::log10(distance) + 40;
+//}
+
+double sims2::Linkmodel::cvpl(const double distance) {
+    return distance == 0 ? 0 : 48.5 * (std::log(distance) / std::log(77)) + 37.5;
+}
+
+double sims2::Linkmodel::bopl(const double distance) {
+    return distance == 0 ? 0 : 67 * (std::log(distance) / std::log(57)) + 11.5;
 }
