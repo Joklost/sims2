@@ -61,6 +61,9 @@ namespace sims2 {
     public:
         LoSModel(sims2::BitMap map, geo::Location nw, geo::Location se);
 
+        LoSModel(geo::Location nw, geo::Location se);
+
+
         /**
          * Compute the path loss
          * @return Path loss
@@ -72,6 +75,8 @@ namespace sims2 {
          * @return Path loss
          */
         const double compute(const sims2::Link &link) const;
+
+        const double compute_chess(const sims2::Link &link) const;
 
         /**
          * Create new BitMap where building pixels have been changed to show computed building coordinates
@@ -144,7 +149,7 @@ namespace sims2 {
          * Get stored model
          * @return LoSModel object
          */
-        sims2::LoSModel &get_model(const sims2::Link& link);
+        sims2::LoSModel &get_model(const sims2::Link &link);
 
         sims2::MapGenerator generator{};
         int zoom_level = 16;

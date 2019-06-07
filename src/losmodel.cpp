@@ -156,6 +156,48 @@ const double sims2::LoSModel::compute(const sims2::Link &link) const {
     return this->compute(link.node1.location, link.node2.location);
 }
 
+sims2::LoSModel::LoSModel(geo::Location nw, geo::Location se) {
+    this->nw_corner = nw;
+    this->se_corner = se;
+    this->lat_mtp = 1;
+    this->lon_mtp = 1;
+}
+
+const double sims2::LoSModel::compute_chess(const sims2::Link &link) const {
+    auto pos1 = link.node1.location, pos2 = link.node2.location;
+    pixelPos pixel_pos1{}, pixel_pos2{};
+
+    /* Translate GPS coordinates to pixel coordinates */
+    if (geo::distance_between(pos1, this->nw_corner) < geo::distance_between(pos2, this->nw_corner)) {
+        pixel_pos1 = this->gps_to_pixel_pos(pos1);
+        pixel_pos2 = this->gps_to_pixel_pos(pos2);
+    } else {
+        pixel_pos1 = this->gps_to_pixel_pos(pos2);
+        pixel_pos2 = this->gps_to_pixel_pos(pos1);
+    }
+
+    auto bearing = line_bearing(pixel_pos1, pixel_pos2);
+    auto count = 0, total = 0;
+
+
+    long int x = pixel_pos2.x;
+    long double y = pixel_pos2.y;
+    do {
+        if (x % 2 == 0 && static_cast<int>(y) % 2 == 0)
+            count++;
+
+        x--;
+        y -= bearing;
+        total++;
+    } while (x >= pixel_pos1.x && y >= pixel_pos1.y);
+
+    auto building_pct = (100 * count) / (double) total;
+    double clear_pct = 100 - building_pct;
+    auto distance = geo::distance_between(pos1, pos2) * KM;
+
+    return (sims2::LoSModel::bopl(std::round(distance)) / 100) * building_pct +
+           (sims2::LoSModel::cvpl(std::round(distance)) / 100) * clear_pct;
+}
 
 /*************************************/
 /*           Map generator           */
