@@ -13,8 +13,8 @@
 /*          LoS model          */
 /*******************************/
 const long double line_bearing(const pixelPos &pos1, const pixelPos &pos2) {
-    long double x_diff = pos2.x - pos1.x;
-    return x_diff == 0 ? x_diff : (pos2.y - pos1.y) / x_diff;
+    long double x_diff = pos1.x - pos2.x;
+    return x_diff == 0 ? x_diff : (pos1.y - pos2.y) / x_diff;
 }
 
 const double vertical_distance(const geo::Location &pos1, const geo::Location &pos2) {
@@ -49,19 +49,31 @@ const double sims2::LoSModel::compute(const geo::Location &pos1, const geo::Loca
     pixelPos pixel_pos1{}, pixel_pos2{};
 
     /* Translate GPS coordinates to pixel coordinates */
-    if (geo::distance_between(pos1, this->nw_corner) < geo::distance_between(pos2, this->nw_corner)) {
-        pixel_pos1 = this->gps_to_pixel_pos(pos1);
-        pixel_pos2 = this->gps_to_pixel_pos(pos2);
+    auto tmp_pos1 = this->gps_to_pixel_pos(pos1);
+    auto tmp_pos2 = this->gps_to_pixel_pos(pos2);
+
+    /* if they are the same position */
+    if (tmp_pos1 == tmp_pos2) {
+        auto color = this->map.get_pixel(tmp_pos1.x, tmp_pos1.y);
+        for (const auto &map_rgb : this->MAP_BUILDING_RGB) {
+            if (color == map_rgb)
+                return sims2::LoSModel::bopl(std::round(geo::distance_between(pos1, pos2)));
+        }
+        return sims2::LoSModel::cvpl(std::round(geo::distance_between(pos1, pos2)));
+    }
+    if (tmp_pos1.x < tmp_pos2.x) {
+        pixel_pos1 = tmp_pos1;
+        pixel_pos2 = tmp_pos2;
     } else {
-        pixel_pos1 = this->gps_to_pixel_pos(pos2);
-        pixel_pos2 = this->gps_to_pixel_pos(pos1);
+        pixel_pos1 = tmp_pos2;
+        pixel_pos2 = tmp_pos1;
     }
 
     auto bearing = line_bearing(pixel_pos1, pixel_pos2);
     auto count = 0, total = 0;
 
-    long int x = pixel_pos2.x;
-    long double y = pixel_pos2.y;
+    long double x = pixel_pos1.x;
+    long double y = pixel_pos1.y;
     do {
         if (this->out_of_map(x, y))
             throw "Pixel position is out of map x y range";
@@ -74,10 +86,12 @@ const double sims2::LoSModel::compute(const geo::Location &pos1, const geo::Loca
             }
         }
 
-        x--;
-        y -= bearing;
+        auto new_pos = this->increment_pos(x, y, bearing);
+        x = new_pos.first;
+        y = new_pos.second;
+
         total++;
-    } while (x >= pixel_pos1.x && y >= pixel_pos1.y);
+    } while (x <= pixel_pos2.x);
 
     /* Compute the path loss */
     auto building_pct = (100 * count) / (double) total;
@@ -92,41 +106,42 @@ sims2::BitMap sims2::LoSModel::visualise_line(const geo::Location &pos1, const g
     pixelPos pixel_pos1{}, pixel_pos2{};
 
     /* Translate GPS coordinates to pixel coordinates */
-    if (geo::distance_between(pos1, this->nw_corner) < geo::distance_between(pos2, this->nw_corner)) {
-        pixel_pos1 = this->gps_to_pixel_pos(pos1);
-        pixel_pos2 = this->gps_to_pixel_pos(pos2);
+    auto tmp_pos1 = this->gps_to_pixel_pos(pos1);
+    auto tmp_pos2 = this->gps_to_pixel_pos(pos2);
+
+    if (tmp_pos1.x < tmp_pos2.x) {
+        pixel_pos1 = tmp_pos1;
+        pixel_pos2 = tmp_pos2;
     } else {
-        pixel_pos1 = this->gps_to_pixel_pos(pos2);
-        pixel_pos2 = this->gps_to_pixel_pos(pos1);
+        pixel_pos1 = tmp_pos2;
+        pixel_pos2 = tmp_pos1;
     }
 
     auto bearing = line_bearing(pixel_pos1, pixel_pos2);
     auto to_return = this->map;
-    long int x = pixel_pos2.x;
-    long double y = pixel_pos2.y;
-    to_return.set_pixel(x, y, sims2::RGB{255, 0, 255});
 
+    long double x = pixel_pos1.x;
+    long double y = pixel_pos1.y;
     do {
         if (this->out_of_map(x, y))
             throw "Pixel position is out of map x y range";
 
-        auto trigger = false;
+        bool trigger = false;
         for (const auto &map_rgb : this->MAP_BUILDING_RGB) {
             if (to_return.get_pixel(x, y) == map_rgb) {
                 trigger = true;
                 break;
             }
         }
-        if (trigger) {
+        if (trigger)
             to_return.set_pixel(x, y, sims2::RGB{255, 0, 0});
-        } else {
+        else
             to_return.set_pixel(x, y, sims2::RGB{0, 255, 0});
-        }
 
-        x--;
-        y -= bearing;
-    } while (x >= pixel_pos1.x && y >= pixel_pos1.y);
-    to_return.set_pixel(x, y, sims2::RGB{255, 0, 255});
+        auto new_pos = this->increment_pos(x, y, bearing);
+        x = new_pos.first;
+        y = new_pos.second;
+    } while (x <= pixel_pos2.x);
 
     return to_return;
 }
@@ -168,28 +183,33 @@ const double sims2::LoSModel::compute_chess(const sims2::Link &link) const {
     pixelPos pixel_pos1{}, pixel_pos2{};
 
     /* Translate GPS coordinates to pixel coordinates */
-    if (geo::distance_between(pos1, this->nw_corner) < geo::distance_between(pos2, this->nw_corner)) {
-        pixel_pos1 = this->gps_to_pixel_pos(pos1);
-        pixel_pos2 = this->gps_to_pixel_pos(pos2);
+    auto tmp_pos1 = this->gps_to_pixel_pos(pos1);
+    auto tmp_pos2 = this->gps_to_pixel_pos(pos2);
+
+    if (tmp_pos1.x < tmp_pos2.x) {
+        pixel_pos1 = tmp_pos1;
+        pixel_pos2 = tmp_pos2;
     } else {
-        pixel_pos1 = this->gps_to_pixel_pos(pos2);
-        pixel_pos2 = this->gps_to_pixel_pos(pos1);
+        pixel_pos1 = tmp_pos2;
+        pixel_pos2 = tmp_pos1;
     }
 
     auto bearing = line_bearing(pixel_pos1, pixel_pos2);
     auto count = 0, total = 0;
+    auto to_return = this->map;
 
+    long int x = pixel_pos1.x;
+    long double y = pixel_pos1.y;
 
-    long int x = pixel_pos2.x;
-    long double y = pixel_pos2.y;
     do {
         if (x % 2 == 0 && static_cast<int>(y) % 2 == 0)
             count++;
 
-        x--;
-        y -= bearing;
-        total++;
-    } while (x >= pixel_pos1.x && y >= pixel_pos1.y);
+        auto new_pos = this->increment_pos(x, y, bearing);
+        x = new_pos.first;
+        y = new_pos.second;
+
+    } while (x <= pixel_pos2.x);
 
     auto building_pct = (100 * count) / (double) total;
     double clear_pct = 100 - building_pct;
@@ -198,6 +218,17 @@ const double sims2::LoSModel::compute_chess(const sims2::Link &link) const {
     return (sims2::LoSModel::bopl(std::round(distance)) / 100) * building_pct +
            (sims2::LoSModel::cvpl(std::round(distance)) / 100) * clear_pct;
 }
+
+std::pair<long double, long double>
+sims2::LoSModel::increment_pos(const long double x, const long double y, const double bearing) const {
+    if (std::abs(bearing) > 1)
+        return std::make_pair(
+                x + 1 / std::abs(bearing),
+                y + (bearing > 1 ? 1 : -1));
+    else
+        return std::make_pair(x + 1, y + bearing);
+}
+
 
 /*************************************/
 /*           Map generator           */

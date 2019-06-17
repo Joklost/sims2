@@ -55,3 +55,28 @@ TEST_CASE("Lookup a model in index and compute building percentage", "[LoSModelI
 
     REQUIRE(model.compute(pos1, pos2) == Approx(52.6).margin(0.1));
 }
+
+TEST_CASE("test visualiser function", "[losmodel]") {
+    std::string script_path = "./gen_map";
+    std::string map_path = "./";
+    /* horizontal */
+//    auto pos1 = geo::Location{14.608507, 121.074975};
+//    auto pos2 = geo::Location{14.607775, 121.078163};
+
+    /* horizontal flipped */
+    auto pos1 = geo::Location{14.607068, 121.074749};
+    auto pos2 = geo::Location{14.608081, 121.077050};
+
+    /* vertical */
+//    auto pos1 = geo::Location{14.610411, 121.073988};
+//    auto pos2 = geo::Location{14.608615, 121.074224};
+
+    /* vertical flipped */
+//    auto pos1 = geo::Location{14.610385, 121.074711};
+//    auto pos2 = geo::Location{14.608631, 121.073923};
+
+    auto index = sims2::LoSModelIndex{script_path, map_path};
+    auto model = index.get_model(pos1, pos2);
+    auto img = model.visualise_line(pos1, pos2);
+    img.write("t_horizontal.bmp");
+}

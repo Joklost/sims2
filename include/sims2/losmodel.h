@@ -21,6 +21,15 @@ struct pixelPos {
         this->y = y;
     }
 
+    bool operator==(const pixelPos &rhs) const {
+        return x == rhs.x &&
+               y == rhs.y;
+    }
+
+    bool operator!=(const pixelPos &rhs) const {
+        return !(rhs == *this);
+    }
+
     friend std::ostream &operator<<(std::ostream &os, const pixelPos &pos) {
         os << "x: " << pos.x << " y: " << pos.y;
         return os;
@@ -116,6 +125,8 @@ namespace sims2 {
          * @return True if outside map area
          */
         const bool out_of_map(geo::Location &pos) const;
+
+        std::pair<long double, long double> increment_pos(long double x, long double y, double bearing) const;
 
         sims2::BitMap map;          /* the map */
         const double step = 1;      /* step size in meters */
